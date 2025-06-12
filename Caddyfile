@@ -1,0 +1,54 @@
+# No global TLS config needed — Cloudflare terminates HTTPS at the edge.
+# Caddy operates as a pure reverse proxy over HTTP internally.
+
+# =================================================
+# 1. THE CORE PLATFORM (Wildcard + Root)
+# =================================================
+# Matches: shop1.egyptcommerce.com, any.egyptcommerce.com, egyptcommerce.com
+# Cloudflare → Full SSL mode handles HTTPS; Caddy receives plain HTTP from CF.
+*.{$ROOT_DOMAIN:egyptcommerce.com}, {$ROOT_DOMAIN:egyptcommerce.com} {
+    handle /api/* {
+        reverse_proxy backend:8080
+    }
+    handle {
+        reverse_proxy frontend:3000
+    }
+
+    encode gzip zstd
+
+    header {
+        X-Frame-Options "DENY"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+}
+
+# Custom domains (e.g. www.coolshoes.com) are handled via Cloudflare for SaaS
+# (Custom Hostnames). Cloudflare issues the cert and CNAMEs here.
+# No :443 / on_demand block needed — CF proxies to this wildcard block.
+
+# =================================================
+# 3. OPS & MANAGEMENT (Internal Tools)
+# =================================================
+
+# Portainer (Docker Management)
+ops.{$ROOT_DOMAIN:egyptcommerce.com} {
+    reverse_proxy portainer:9000
+    # Uncomment to add basic auth:
+    # basic_auth {
+    #     admin $2a$14$... # caddy hash-password
+    # }
+}
+
+# Grafana (Metrics Dashboard)
+monitor.{$ROOT_DOMAIN:egyptcommerce.com} {
+    reverse_proxy grafana:3000
+}
+
+# =================================================
+# 4. REDIRECTS
+# =================================================
+www.{$ROOT_DOMAIN:egyptcommerce.com} {
+    redir https://{$ROOT_DOMAIN:egyptcommerce.com}{uri}
+}
