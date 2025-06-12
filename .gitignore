@@ -1,0 +1,29 @@
+# Local Data
+data/
+.env
+
+# Node
+node_modules/
+.next/
+
+# Go
+gateway_linux
+main.exe
+tmp/
+
+# Docker volumes
+caddy_data/
+caddy_config/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+.ai/
+.agents/
+skills-lock.json
