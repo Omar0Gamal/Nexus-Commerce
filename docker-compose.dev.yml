@@ -1,0 +1,124 @@
+services:
+  # =========================================
+  # INFRASTRUCTURE
+  # =========================================
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: saas_db
+    ports:
+      - "5432:5432" # Exposed for local tools (TablePlus, DBeaver)
+    volumes:
+      - pg_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d saas_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dev_net
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379" # Exposed for local debugging
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dev_net
+
+  # =========================================
+  # APPLICATION (Hot Reload Mode)
+  # =========================================
+
+  # 1. Backend API (Go + Air hot reload)
+  backend:
+    build:
+      context: ./app/backend-api
+      dockerfile: Dockerfile.dev
+    command: air -c .air.toml
+    volumes:
+      - ./app/backend-api:/app
+      - uploads_dev:/uploads
+    environment:
+      - DATABASE_URL=postgres://user:password@postgres:5432/saas_db?sslmode=disable
+      - REDIS_ADDR=redis:6379
+      - PORT=8080
+      - ENVIRONMENT=development
+      - UPLOAD_DIR=/uploads
+      # Paymob payment gateway (replace with real values to test payments locally)
+      - PAYMOB_API_KEY=${PAYMOB_API_KEY:-}
+      - PAYMOB_INTEGRATION_ID=${PAYMOB_INTEGRATION_ID:-0}
+      - PAYMOB_IFRAME_ID=${PAYMOB_IFRAME_ID:-0}
+      - PAYMOB_HMAC_SECRET=${PAYMOB_HMAC_SECRET:-}
+      # 32+ byte key for AES-256-GCM encryption of shop payment credentials at rest.
+      # Leave empty in development (falls back to plaintext). MUST be set in production.
+      - PAYMOB_CREDENTIALS_KEY=${PAYMOB_CREDENTIALS_KEY:-}
+      # Transactional email via SMTP (leave blank to disable)
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USERNAME=${SMTP_USERNAME:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM=${SMTP_FROM:-}
+    ports:
+      - "8080:8080"   # Exposed for direct API testing
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - dev_net
+
+  # 2. Frontend (Next.js + Turbopack hot reload)
+  frontend:
+    build:
+      context: ./app/frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./app/frontend/src:/app/src           # Hot reload source files
+      - ./app/frontend/public:/app/public
+    environment:
+      - INTERNAL_API_URL=http://backend:8080   # Server-side calls to backend
+      - NEXT_PUBLIC_API_URL=                   # Empty = relative URLs, stays on same subdomain origin
+      # Base host for storefront subdomain links (e.g. {shop}.localhost:8000)
+      - NEXT_PUBLIC_STOREFRONT_HOST=${NEXT_PUBLIC_STOREFRONT_HOST:-localhost:3000}
+    ports:
+      - "3000:3000"              # Direct access for debugging
+    networks:
+      - dev_net
+
+
+
+  # 4. Database Migrations (run once)
+  migrate:
+    build:
+      context: ./app/backend-api
+      dockerfile: Dockerfile.dev
+    command: go run ./cmd/migrate -direction up
+    volumes:
+      - ./app/backend-api:/app
+    environment:
+      - DATABASE_URL=postgres://user:password@postgres:5432/saas_db?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - migrate
+    networks:
+      - dev_net
+
+networks:
+  dev_net:
+    driver: bridge
+
+volumes:
+  pg_data_dev:
+  uploads_dev:
