@@ -1,0 +1,17 @@
+FROM golang:1.24-alpine
+
+WORKDIR /app
+
+# Install air for hot reloading
+RUN go install github.com/air-verse/air@v1.61.7
+
+# Install migrate CLI for running migrations
+RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+
+COPY go.mod go.sum ./
+RUN GOPROXY=https://proxy.golang.org,https://goproxy.io,direct GONOSUMCHECK=* go mod download
+
+COPY . .
+
+# Default: run the API (overridden by docker-compose command)
+CMD ["air", "-c", ".air.toml"]
