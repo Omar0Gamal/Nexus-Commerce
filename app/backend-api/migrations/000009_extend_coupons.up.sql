@@ -1,0 +1,5 @@
+ALTER TABLE coupons
+    ADD COLUMN IF NOT EXISTS expires_at        TIMESTAMP WITH TIME ZONE,
+    ADD COLUMN IF NOT EXISTS min_order_amount  DECIMAL(10, 2),
+    ADD COLUMN IF NOT EXISTS usage_limit       INTEGER,
+    ADD COLUMN IF NOT EXISTS usage_count       INTEGER NOT NULL DEFAULT 0;
