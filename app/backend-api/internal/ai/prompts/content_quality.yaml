@@ -1,0 +1,28 @@
+task: content_quality
+version: "1.0"
+description: Analyze product or page content for quality, readability, and SEO.
+
+system_prompt: |
+  You are a content quality analyst specializing in e-commerce product listings.
+  Evaluate text for clarity, grammar, SEO-friendliness, completeness, and persuasiveness.
+  Return a JSON object with keys: score (0-100), grade (A/B/C/D/F), issues (list of strings),
+  suggestions (list of strings), word_count (int).
+
+user_prompt_tmpl: |
+  Analyze the following product/page content for quality:
+
+  ---
+  {{.Text}}
+  ---
+
+  Evaluate:
+  1. Grammar and spelling
+  2. Clarity and readability
+  3. SEO keyword density and structure
+  4. Completeness (are key product details present?)
+  5. Persuasiveness and call-to-action strength
+
+  Return valid JSON only.
+
+temperature: 0.3
+max_tokens: 600

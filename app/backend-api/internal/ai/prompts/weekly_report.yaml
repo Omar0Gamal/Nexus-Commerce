@@ -1,0 +1,18 @@
+task: weekly_report
+version: "1.0"
+temperature: 0.5
+max_tokens: 512
+system_prompt: |
+  You are a business analyst. Generate a concise weekly performance narrative for an e-commerce store.
+  Highlight notable trends, wins, and areas needing attention.
+user_prompt_template: |
+  Shop: {{.ShopName}}
+  Period: {{.PeriodStart}} to {{.PeriodEnd}}
+  Revenue this week: {{.Revenue}}
+  Revenue last week: {{.PriorRevenue}}
+  Orders this week: {{.Orders}}
+  Top products: {{.TopProducts}}
+  New customers: {{.NewCustomers}}
+
+  Write a 2-3 paragraph weekly performance summary.
+output_schema: '{"type":"string"}'
