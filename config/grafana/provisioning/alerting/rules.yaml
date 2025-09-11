@@ -1,0 +1,137 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: nexus-alerts
+    folder: Nexus Commerce
+    interval: 1m
+    rules:
+      - uid: backend-5xx-rate
+        title: HighBackend5xxRate
+        condition: C
+        for: 2m
+        annotations:
+          summary: "Backend 5xx error rate is above 5%"
+          description: "The backend API is returning 5xx errors at >5% for 2+ minutes."
+        labels:
+          severity: critical
+          team: backend
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            model:
+              expr: sum(rate(backend_requests_total{status_class="5xx"}[5m]))
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: B
+            datasourceUid: prometheus
+            model:
+              expr: sum(rate(backend_requests_total[5m]))
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: math
+              expression: "$A / $B > 0.05"
+
+      - uid: gateway-5xx-rate
+        title: HighGateway5xxRate
+        condition: C
+        for: 2m
+        annotations:
+          summary: "Gateway 5xx error rate is above 10%"
+          description: "The gateway is returning 5xx errors at >10% for 2+ minutes."
+        labels:
+          severity: critical
+          team: platform
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            model:
+              expr: sum(rate(gateway_requests_total{status_class="5xx"}[5m]))
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: B
+            datasourceUid: prometheus
+            model:
+              expr: sum(rate(gateway_requests_total[5m]))
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              type: math
+              expression: "$A / $B > 0.10"
+
+      - uid: analytics-channel-depth
+        title: AnalyticsChannelDepth
+        condition: A
+        for: 1m
+        annotations:
+          summary: "Analytics channel is >80% full (>8000 items)"
+          description: "The analytics in-memory channel has >8000 pending events. Risk of dropping events."
+        labels:
+          severity: warning
+          team: analytics
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            model:
+              expr: gateway_analytics_channel_depth > 8000
+              intervalMs: 1000
+              maxDataPoints: 43200
+
+      - uid: analytics-dlq-growing
+        title: AnalyticsDLQGrowing
+        condition: A
+        for: 5m
+        annotations:
+          summary: "Analytics DLQ depth exceeded 100"
+          description: "The analytics dead-letter queue has >100 events. Processing failures need investigation."
+        labels:
+          severity: warning
+          team: analytics
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            model:
+              expr: analytics_worker_dlq_depth > 100
+              intervalMs: 1000
+              maxDataPoints: 43200
+
+      - uid: pgxpool-exhaustion
+        title: PgxpoolExhaustion
+        condition: A
+        for: 2m
+        annotations:
+          summary: "pgxpool connection count is near maximum (>90)"
+          description: "The Postgres connection pool has >90 acquired connections. Risk of request failures."
+        labels:
+          severity: warning
+          team: backend
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            model:
+              expr: backend_pgxpool_acquired_conns > 90
+              intervalMs: 1000
+              maxDataPoints: 43200
+
+      - uid: analytics-worker-stall
+        title: AnalyticsWorkerStall
+        condition: A
+        for: 5m
+        annotations:
+          summary: "Analytics worker appears stalled"
+          description: "No events processed in the last 10 minutes while channel has >100 pending events."
+        labels:
+          severity: critical
+          team: analytics
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            model:
+              expr: "rate(analytics_worker_events_processed_total[10m]) == 0 and gateway_analytics_channel_depth > 100"
+              intervalMs: 1000
+              maxDataPoints: 43200
