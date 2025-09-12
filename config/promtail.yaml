@@ -1,0 +1,86 @@
+﻿# Promtail configuration - ships Docker container logs to Loki
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: containers
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: docker
+          __path__: /var/lib/docker/containers/*/*-json.log
+
+    pipeline_stages:
+      # Extract container name from Docker metadata
+      - docker: {}
+
+      # Extract container name and ID from the log path
+      - regex:
+          source: filename
+          expression: '/var/lib/docker/containers/(?P<container_id>[^/]+)/.*'
+
+      # Pull container_name label from Docker metadata (set by compose service name)
+      - template:
+          source: container_name
+          template: '{{ .container_name }}'
+
+      - labels:
+          container_id:
+          container_name:
+          compose_service:
+
+      # Drop noisy health-check logs
+      - match:
+          selector: '{job="docker"}'
+          stages:
+            - regex:
+                expression: '.*healthcheck.*'
+            - drop:
+                source: healthcheck
+                expression: '.*'
+
+      # Structured JSON log parsing for backend-api + gateway (Zap output)
+      - match:
+          selector: '{compose_service=~"backend-api|gateway"}'
+          stages:
+            # Parse the outer Docker log JSON to extract the log field
+            - json:
+                expressions:
+                  log: log
+
+            # Parse the inner Zap JSON log
+            - json:
+                source: log
+                expressions:
+                  level:      level
+                  ts:         ts
+                  msg:        msg
+                  shop_id:    shop_id
+                  request_id: request_id
+                  status:     status
+                  latency_ms: latency_ms
+                  method:     method
+                  path:       path
+
+            # Set Loki labels from structured fields
+            - labels:
+                level:
+                shop_id:
+
+            # Parse timestamp from Zap Unix float
+            - timestamp:
+                source: ts
+                format: Unix
+
+            # Drop debug-level logs in production
+            - drop:
+                source: level
+                expression: 'debug'
