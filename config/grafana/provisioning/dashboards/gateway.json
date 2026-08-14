@@ -1,0 +1,133 @@
+{
+  "uid": "gateway-overview",
+  "title": "Gateway Overview",
+  "tags": ["gateway", "nexus"],
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Request Rate (req/s)",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "targets": [{
+        "datasource": "Prometheus",
+        "expr": "sum(rate(gateway_requests_total[1m]))",
+        "legendFormat": "req/s"
+      }]
+    },
+    {
+      "id": 2,
+      "title": "5xx Error Rate (%)",
+      "type": "stat",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "targets": [{
+        "datasource": "Prometheus",
+        "expr": "100 * sum(rate(gateway_requests_total{status_class=\"5xx\"}[5m])) / sum(rate(gateway_requests_total[5m]))",
+        "legendFormat": "% errors"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 1, "color": "yellow" },
+              { "value": 5, "color": "red" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "P95 Latency (ms)",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "targets": [{
+        "datasource": "Prometheus",
+        "expr": "histogram_quantile(0.95, sum(rate(gateway_request_duration_seconds_bucket[5m])) by (le)) * 1000",
+        "legendFormat": "p95 ms"
+      }]
+    },
+    {
+      "id": 4,
+      "title": "Analytics Channel Depth",
+      "type": "stat",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "targets": [{
+        "datasource": "Prometheus",
+        "expr": "gateway_analytics_channel_depth",
+        "legendFormat": "depth"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 5000, "color": "yellow" },
+              { "value": 9000, "color": "red" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Request Rate by Status Class",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "targets": [{
+        "datasource": "Prometheus",
+        "expr": "sum by (status_class) (rate(gateway_requests_total[1m]))",
+        "legendFormat": "{{status_class}}"
+      }]
+    },
+    {
+      "id": 6,
+      "title": "Request Latency Heatmap",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "histogram_quantile(0.50, sum(rate(gateway_request_duration_seconds_bucket[5m])) by (le)) * 1000",
+          "legendFormat": "p50"
+        },
+        {
+          "datasource": "Prometheus",
+          "expr": "histogram_quantile(0.95, sum(rate(gateway_request_duration_seconds_bucket[5m])) by (le)) * 1000",
+          "legendFormat": "p95"
+        },
+        {
+          "datasource": "Prometheus",
+          "expr": "histogram_quantile(0.99, sum(rate(gateway_request_duration_seconds_bucket[5m])) by (le)) * 1000",
+          "legendFormat": "p99"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Cache Hit Rate by Layer",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "targets": [{
+        "datasource": "Prometheus",
+        "expr": "sum by (layer) (rate(gateway_cache_hits_total[1m]))",
+        "legendFormat": "{{layer}}"
+      }]
+    },
+    {
+      "id": 8,
+      "title": "Upstream Errors",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "targets": [{
+        "datasource": "Prometheus",
+        "expr": "rate(gateway_upstream_errors_total[1m])",
+        "legendFormat": "upstream errors/s"
+      }]
+    }
+  ]
+}
