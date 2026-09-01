@@ -1,0 +1,69 @@
+# Environment & Local Data
+data/
+.env
+.env.*
+!.env.example
+
+# Node & Frontend Build
+node_modules/
+.next/
+out/
+build/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Go Build & Binaries
+gateway_linux
+main.exe
+*.exe
+*.test
+*.out
+tmp/
+
+# Docker Volumes
+caddy_data/
+caddy_config/
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Temporary & Backup Files
+*.bak
+*.tmp
+*.temp
+*.orig
+*.log
+
+# AI Agent & Scratch Files
+.ai/
+.agents/
+.claude/
+.cursor/
+.windsurf/
+.cursorrules
+.windsurfrules
+CLAUDE.md
+claude.md
+AGENTS.md
+agents.md
+todo.md
+TODO.md
+scratchpad.*
+skills-lock.json
+
+# Local Demo Seeds & Capture Scripts
+scripts/seed_rich_demo.sql
+scripts/seed_rich_demo.ps1
+*.seed.sql
+scripts/*screenshot*
