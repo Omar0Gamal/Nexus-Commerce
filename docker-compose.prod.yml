@@ -1,0 +1,268 @@
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+    - 80:80
+    - 443:443
+    volumes:
+    - caddy_data:/data
+    - caddy_config:/config
+    - ./Caddyfile:/etc/caddy/Caddyfile
+    environment:
+    - ROOT_DOMAIN=${ROOT_DOMAIN:-egyptcommerce.com}
+    - GATEWAY_SECRET=${GATEWAY_SECRET}
+    depends_on:
+      backend:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks:
+    - saas_net
+  backend:
+    build: ./app/backend-api
+    restart: always
+    environment:
+    - PORT=8080
+    - DATABASE_URL=postgres://user:${DB_PASSWORD}@postgres:5432/saas_db?sslmode=disable
+    - REDIS_ADDR=:${REDIS_PASSWORD}@redis:6379
+    - ENVIRONMENT=production
+    - JWT_SECRET=${JWT_SECRET}
+    - PAYMOB_CREDENTIALS_KEY=${PAYMOB_CREDENTIALS_KEY}
+    - TOTP_ENCRYPTION_KEY=${TOTP_ENCRYPTION_KEY}
+    - FRONTEND_URL=${FRONTEND_URL}
+    - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
+    - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
+    - VAPID_EMAIL=${VAPID_EMAIL}
+    - AI_PRIMARY_PROVIDER=${AI_PRIMARY_PROVIDER}
+    - AI_PRIMARY_API_KEY=${AI_PRIMARY_API_KEY}
+    - AI_PRIMARY_MODEL=${AI_PRIMARY_MODEL}
+    - AI_FALLBACK_PROVIDER=${AI_FALLBACK_PROVIDER}
+    - AI_FALLBACK_API_KEY=${AI_FALLBACK_API_KEY}
+    - AI_FALLBACK_MODEL=${AI_FALLBACK_MODEL}
+    - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+    - S3_SECRET_KEY=${S3_SECRET_KEY}
+    - R2_ACCOUNT_ID=${R2_ACCOUNT_ID}
+    - R2_ACCESS_KEY=${R2_ACCESS_KEY}
+    - R2_SECRET_KEY=${R2_SECRET_KEY}
+    - R2_BUCKET=${R2_BUCKET}
+    - R2_PUBLIC_URL=${R2_PUBLIC_URL}
+    - PAYMOB_API_KEY=${PAYMOB_API_KEY}
+    - PAYMOB_INTEGRATION_ID=${PAYMOB_INTEGRATION_ID}
+    - PAYMOB_IFRAME_ID=${PAYMOB_IFRAME_ID}
+    - PAYMOB_HMAC_SECRET=${PAYMOB_HMAC_SECRET}
+    - SMTP_HOST=${SMTP_HOST}
+    - SMTP_PORT=${SMTP_PORT:-587}
+    - SMTP_USERNAME=${SMTP_USERNAME}
+    - SMTP_PASSWORD=${SMTP_PASSWORD}
+    - SMTP_FROM=${SMTP_FROM}
+    - GIN_MODE=release
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - wget -qO- http://localhost:8080/health || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    networks:
+    - saas_net
+  frontend:
+    build: ./app/frontend
+    restart: always
+    environment:
+    - NODE_ENV=production
+    - INTERNAL_API_URL=http://backend:8080
+    - NEXT_PUBLIC_API_URL=https://${ROOT_DOMAIN:-egyptcommerce.com}
+    expose:
+    - '3000'
+    depends_on:
+    - backend
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    networks:
+    - saas_net
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: saas_db
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+    - pg_data_prod:/var/lib/postgresql/data
+    - ./config/postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U user -d saas_db
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 12G
+    networks:
+    - saas_net
+  redis:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+    - redis_data_prod:/data
+    command: redis-server --save 60 1 --appendonly yes --requirepass ${REDIS_PASSWORD}
+      --maxmemory 2gb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test:
+      - CMD
+      - redis-cli
+      - ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    networks:
+    - saas_net
+  migrate:
+    build: ./app/backend-api
+    command:
+    - /migrate
+    - -direction=up
+    environment:
+    - DATABASE_URL=postgres://user:${DB_PASSWORD}@postgres:5432/saas_db?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+    - migrate
+    networks:
+    - saas_net
+  backup:
+    image: prodrigestivill/postgres-backup-s3:16
+    restart: always
+    environment:
+    - POSTGRES_HOST=postgres
+    - POSTGRES_DB=saas_db
+    - POSTGRES_USER=user
+    - POSTGRES_PASSWORD=${DB_PASSWORD}
+    - SCHEDULE=@daily
+    - BACKUP_KEEP_DAYS=7
+    - BACKUP_KEEP_WEEKS=4
+    - BACKUP_KEEP_MONTHS=6
+    - HEALTHCHECK_PORT=8080
+    - S3_ENDPOINT=https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com
+    - S3_ACCESS_KEY_ID=${R2_ACCESS_KEY}
+    - S3_SECRET_ACCESS_KEY=${R2_SECRET_KEY}
+    - S3_BUCKET=${R2_BUCKET}
+    - S3_PREFIX=db-backups
+    - S3_REGION=auto
+    volumes:
+    - db_backups:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    networks:
+    - saas_net
+  portainer:
+    image: portainer/portainer-ce:2.27.3
+    restart: always
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    - portainer_data:/data
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    networks:
+    - saas_net
+  loki:
+    image: grafana/loki:3.4.2
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+    - loki_data:/loki
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks:
+    - saas_net
+  promtail:
+    image: grafana/promtail:3.4.2
+    volumes:
+    - /var/log:/var/log:ro
+    - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    - ./config/promtail.yaml:/etc/promtail/config.yaml:ro
+    command: -config.file=/etc/promtail/config.yaml
+    depends_on:
+    - loki
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    networks:
+    - saas_net
+  grafana:
+    image: grafana/grafana:11.6.0
+    restart: always
+    environment:
+    - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+    - GF_SERVER_ROOT_URL=https://monitor.${ROOT_DOMAIN:-egyptcommerce.com}
+    - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+    - grafana_data:/var/lib/grafana
+    - ./config/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+    - loki
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    networks:
+    - saas_net
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    volumes:
+    - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    - prometheus_data:/prometheus
+    command: --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.retention.time=15d
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    networks:
+    - saas_net
+networks:
+  saas_net:
+    driver: bridge
+volumes:
+  pg_data_prod: null
+  redis_data_prod: null
+  db_backups: null
+  caddy_data: null
+  caddy_config: null
+  portainer_data: null
+  loki_data: null
+  grafana_data: null
+  prometheus_data: null

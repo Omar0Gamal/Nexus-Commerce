@@ -1,0 +1,39 @@
+# Cloudflare terminates TLS at the edge; Caddy proxies HTTP traffic internally.
+*.{$ROOT_DOMAIN:egyptcommerce.com}, {$ROOT_DOMAIN:egyptcommerce.com} {
+    # Reject requests bypassing the Cloudflare Worker to prevent X-Shop-ID header spoofing.
+    @blocked {
+        not header X-Gateway-Secret {$GATEWAY_SECRET}
+    }
+    abort @blocked
+
+    handle /api/* {
+        reverse_proxy backend:8080
+    }
+    handle {
+        reverse_proxy frontend:3000
+    }
+
+    encode gzip zstd
+
+    header {
+        X-Frame-Options "DENY"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+}
+
+ops.{$ROOT_DOMAIN:egyptcommerce.com} {
+    reverse_proxy portainer:9000
+    basic_auth {
+        admin $2a$14$1lD098Q0s9R0a...
+    }
+}
+
+monitor.{$ROOT_DOMAIN:egyptcommerce.com} {
+    reverse_proxy grafana:3000
+}
+
+www.{$ROOT_DOMAIN:egyptcommerce.com} {
+    redir https://{$ROOT_DOMAIN:egyptcommerce.com}{uri}
+}
