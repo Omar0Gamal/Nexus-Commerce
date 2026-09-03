@@ -1,0 +1,105 @@
+{
+  "uid": "analytics-overview",
+  "title": "Analytics Worker",
+  "tags": ["analytics", "nexus"],
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Events Processed/min",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "targets": [{
+        "datasource": "Prometheus",
+        "expr": "sum(rate(analytics_worker_events_processed_total[1m])) * 60",
+        "legendFormat": "events/min"
+      }]
+    },
+    {
+      "id": 2,
+      "title": "DLQ Depth",
+      "type": "stat",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "targets": [{
+        "datasource": "Prometheus",
+        "expr": "analytics_worker_dlq_depth",
+        "legendFormat": "DLQ"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 50, "color": "yellow" },
+              { "value": 100, "color": "red" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Channel Depth",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "targets": [{
+        "datasource": "Prometheus",
+        "expr": "gateway_analytics_channel_depth",
+        "legendFormat": "depth"
+      }]
+    },
+    {
+      "id": 4,
+      "title": "Events Dropped",
+      "type": "stat",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "targets": [{
+        "datasource": "Prometheus",
+        "expr": "rate(gateway_analytics_events_dropped_total[5m]) * 60",
+        "legendFormat": "drops/min"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 1, "color": "red" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Events Processed by Type",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "targets": [{
+        "datasource": "Prometheus",
+        "expr": "sum by (event_type) (rate(analytics_worker_events_processed_total[1m]))",
+        "legendFormat": "{{event_type}}"
+      }]
+    },
+    {
+      "id": 6,
+      "title": "DLQ & Channel Depth Over Time",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "analytics_worker_dlq_depth",
+          "legendFormat": "DLQ depth"
+        },
+        {
+          "datasource": "Prometheus",
+          "expr": "gateway_analytics_channel_depth",
+          "legendFormat": "channel depth"
+        }
+      ]
+    }
+  ]
+}
