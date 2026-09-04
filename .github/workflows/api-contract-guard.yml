@@ -1,0 +1,45 @@
+name: API Contract Guard
+on:
+  pull_request:
+    paths:
+      - 'app/backend-api/internal/**'
+      - 'docs/openapi.yaml'
+
+jobs:
+  spec-freshness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check if Go handler/DTO changes include spec updates
+        run: |
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          
+          BACKEND_CHANGED=$(echo "$CHANGED" | grep -E 'internal/.*(handler|dto|service)\.go' || true)
+          SPEC_CHANGED=$(echo "$CHANGED" | grep 'docs/openapi.yaml' || true)
+          
+          if [ -n "$BACKEND_CHANGED" ] && [ -z "$SPEC_CHANGED" ]; then
+            echo "::error::Backend API code changed but docs/openapi.yaml was not updated."
+            echo "Changed backend files:"
+            echo "$BACKEND_CHANGED"
+            exit 1
+          fi
+
+      - name: Verify generated client is up to date
+        if: success()
+        run: |
+          cd app/frontend
+          npm ci
+          npm run generate:api
+          if [[ -n $(git status --porcelain src/api/) ]]; then
+            echo "::error::Generated API client is out of date. Run 'npm run generate:api' locally and commit the changes."
+            git diff src/api/
+            exit 1
+          fi
