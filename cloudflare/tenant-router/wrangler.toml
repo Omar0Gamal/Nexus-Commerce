@@ -1,0 +1,12 @@
+name = "nexus-tenant-router"
+main = "src/index.js"
+compatibility_date = "2024-03-20"
+
+# Bind a KV Namespace
+[[kv_namespaces]]
+binding = "TENANT_KV"
+id = "YOUR_KV_NAMESPACE_ID"
+
+[vars]
+BACKEND_ORIGIN = "api.yourbackend.com"
+FRONTEND_ORIGIN = "frontend.yourfrontend.com"
