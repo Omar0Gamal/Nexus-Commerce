@@ -1,0 +1,3 @@
+ALTER TABLE shops
+DROP COLUMN IF EXISTS country,
+DROP COLUMN IF EXISTS industry;

@@ -1,0 +1,1 @@
+ALTER TABLE shops ADD COLUMN storefront_config JSONB DEFAULT '{}'::jsonb;

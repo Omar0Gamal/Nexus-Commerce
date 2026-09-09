@@ -1,0 +1,3 @@
+ALTER TABLE products
+    ADD COLUMN IF NOT EXISTS stock_quantity       INTEGER NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS low_stock_threshold  INTEGER NOT NULL DEFAULT 5;
