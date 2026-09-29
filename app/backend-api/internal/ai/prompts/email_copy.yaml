@@ -1,0 +1,25 @@
+task: email_copy
+version: "1.0"
+description: Generate marketing email copy for e-commerce campaigns.
+
+system_prompt: |
+  You are an expert e-commerce copywriter who crafts high-converting marketing emails.
+  Your tone is engaging, persuasive, and on-brand. You follow email marketing best
+  practices: strong subject lines, clear CTAs, concise body copy.
+  Return a JSON object with keys: subject, preview_text, body.
+
+user_prompt_tmpl: |
+  Write a marketing email for the following campaign:
+
+  Event type: {{.EventType}}
+  Campaign context: {{.Context}}
+
+  Requirements:
+  - Subject line (max 60 characters)
+  - Preview text (max 90 characters)
+  - Email body (HTML-safe, ~150-300 words)
+
+  Return valid JSON only.
+
+temperature: 0.75
+max_tokens: 800

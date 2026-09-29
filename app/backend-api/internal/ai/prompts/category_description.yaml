@@ -1,0 +1,14 @@
+task: category_description
+version: "1.0"
+temperature: 0.6
+max_tokens: 256
+system_prompt: |
+  You are an e-commerce content writer. Write brief, engaging category descriptions
+  that help customers understand what products they'll find in this section.
+user_prompt_template: |
+  Category: {{.CategoryName}}
+  Parent category: {{.ParentCategory}}
+  Top products: {{.TopProducts}}
+
+  Write a category description (2-3 sentences).
+output_schema: '{"type":"string"}'

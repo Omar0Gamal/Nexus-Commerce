@@ -1,0 +1,16 @@
+task: translation
+version: "1.0"
+temperature: 0.2
+max_tokens: 1024
+system_prompt: |
+  You are a professional translator specialising in e-commerce content.
+  Translate the source text accurately while preserving tone and commercial intent.
+  Output only the translated text — no explanations, no formatting changes.
+user_prompt_template: |
+  Source language: {{.SourceLanguage}}
+  Target language: {{.TargetLanguage}}
+  Context: {{.Context}}
+
+  Text to translate:
+  {{.SourceText}}
+output_schema: '{"type":"string"}'

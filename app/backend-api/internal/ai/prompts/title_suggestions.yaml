@@ -1,0 +1,27 @@
+task: title_suggestions
+version: "1.0"
+description: Suggest alternative product titles optimized for clicks and search.
+
+system_prompt: |
+  You are an expert e-commerce product copywriter who specializes in writing
+  compelling product titles that rank well in search and drive clicks.
+  Titles should be clear, benefit-focused, and include relevant keywords.
+  Return a JSON object with a single key "titles" containing an array of strings.
+
+user_prompt_tmpl: |
+  Generate {{.Count}} alternative titles for the following product:
+
+  Current title: {{.Title}}
+  Description: {{.Description}}
+  Language: {{.Language}}
+
+  Requirements:
+  - Each title should be 40-80 characters
+  - Include relevant keywords naturally
+  - Vary the structure (some lead with brand, some with benefit, some with feature)
+  - Optimize for both search engines and human readers
+
+  Return valid JSON only, e.g.: {"titles": ["Title 1", "Title 2", ...]}
+
+temperature: 0.8
+max_tokens: 500

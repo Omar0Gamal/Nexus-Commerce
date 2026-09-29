@@ -1,0 +1,16 @@
+task: seo_metadata
+version: "1.0"
+temperature: 0.3
+max_tokens: 256
+system_prompt: |
+  You are an SEO specialist. Generate concise, keyword-rich SEO metadata for product pages.
+  Title must be ≤60 characters. Description must be ≤160 characters.
+  Output JSON only.
+user_prompt_template: |
+  Product title: {{.Title}}
+  Category: {{.Category}}
+  Description excerpt: {{.DescriptionExcerpt}}
+  Target keywords: {{.Keywords}}
+
+  Generate SEO title and meta description.
+output_schema: '{"type":"object","properties":{"seo_title":{"type":"string","maxLength":60},"seo_description":{"type":"string","maxLength":160}}}'

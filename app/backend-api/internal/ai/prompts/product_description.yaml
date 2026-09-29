@@ -1,0 +1,18 @@
+task: product_description
+version: "1.0"
+temperature: 0.7
+max_tokens: 512
+system_prompt: |
+  You are a skilled e-commerce copywriter. Write compelling, accurate product descriptions
+  that highlight key benefits and features. Use the shop's brand tone if provided.
+  Output plain text only — no markdown, no bullet points unless explicitly requested.
+user_prompt_template: |
+  Shop: {{.ShopName}}
+  Product title: {{.Title}}
+  Category: {{.Category}}
+  Existing description: {{.ExistingDescription}}
+  Tone: {{.Tone}}
+  Max length: {{.MaxWords}} words
+
+  Write a product description for this item.
+output_schema: '{"type":"string"}'
