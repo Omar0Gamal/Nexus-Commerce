@@ -300,7 +300,7 @@ func (h *Handler) CheckoutIntent(c *gin.Context) {
 
 	var amountCents int64
 	var parsedPrice float64
-	fmt.Sscanf(order.TotalPrice, "%f", &parsedPrice)
+	_, _ = fmt.Sscanf(order.TotalPrice, "%f", &parsedPrice)
 	amountCents = int64(parsedPrice * 100)
 
 	paymobOrderID, err := h.paymobClient.RegisterOrder(token, amountCents, "EGP", order.ID)

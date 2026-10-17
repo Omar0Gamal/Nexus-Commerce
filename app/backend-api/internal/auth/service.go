@@ -513,17 +513,6 @@ func (s *Service) StaffChangePassword(ctx context.Context, userID string, req St
 	})
 }
 
-func mapAuthErr(err error) error {
-	if err == nil {
-		return nil
-	}
-	var pgErr interface{ SQLState() string }
-	if errors.As(err, &pgErr) && pgErr.SQLState() == "23505" {
-		return ErrEmailTaken
-	}
-	return err
-}
-
 func (s *Service) Me(ctx context.Context, userID string) (*MeResponse, error) {
 	uid, err := uuid.Parse(userID)
 	if err != nil {

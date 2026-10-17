@@ -32,17 +32,6 @@ type sitemapURL struct {
 	Priority   float64 `xml:"priority,omitempty"`
 }
 
-type sitemapIndex struct {
-	XMLName  xml.Name            `xml:"sitemapindex"`
-	Xmlns    string              `xml:"xmlns,attr"`
-	Sitemaps []sitemapIndexEntry `xml:"sitemap"`
-}
-
-type sitemapIndexEntry struct {
-	Loc     string `xml:"loc"`
-	LastMod string `xml:"lastmod"`
-}
-
 func (s *Service) GenerateSitemap(ctx context.Context, shopID uuid.UUID, baseURL string) ([]byte, error) {
 	cacheKey := fmt.Sprintf("sitemap:%s", shopID)
 
@@ -162,7 +151,7 @@ func (s *Service) LookupRedirect(ctx context.Context, shopID uuid.UUID, fromPath
 	if err == nil {
 		var code int
 		var toPath string
-		fmt.Sscanf(cachedEntry, "%d|%s", &code, &toPath)
+		_, _ = fmt.Sscanf(cachedEntry, "%d|%s", &code, &toPath)
 		go func() {
 			_ = s.q.IncrementRedirectHitCount(ctx, db.IncrementRedirectHitCountParams{
 				ShopID:   shopID,

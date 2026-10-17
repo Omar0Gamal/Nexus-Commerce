@@ -148,7 +148,7 @@ func (h *Handler) GeneratePortalLink(c *gin.Context) {
 	}
 
 	var monthlyPriceFloat float64
-	fmt.Sscanf(status.Plan.MonthlyPrice, "%f", &monthlyPriceFloat)
+	_, _ = fmt.Sscanf(status.Plan.MonthlyPrice, "%f", &monthlyPriceFloat)
 	amountCents := int64(monthlyPriceFloat * 100)
 
 	paymobOrderID, err := h.paymobClient.RegisterOrder(token, amountCents, "EGP", "")

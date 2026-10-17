@@ -275,10 +275,7 @@ func (h *Handler) UpdatePaymobSettings(c *gin.Context) {
 		return
 	}
 
-	response.OK(c, PaymobSettingsResponse{
-		IsEnabled:       req.IsEnabled,
-		SubMerchantCode: req.SubMerchantCode,
-	})
+	response.OK(c, PaymobSettingsResponse(req))
 }
 
 type WebhookPayload struct {

@@ -949,10 +949,10 @@ func (h *Handler) ExportProducts(c *gin.Context) {
 	c.Header("Content-Type", "text/csv")
 
 	writer := csv.NewWriter(c.Writer)
-	writer.Write([]string{"ID", "Title", "Slug", "Price", "StockQuantity", "Status"})
+	_ = writer.Write([]string{"ID", "Title", "Slug", "Price", "StockQuantity", "Status"})
 
 	for _, p := range products {
-		writer.Write([]string{
+		_ = writer.Write([]string{
 			p.ID,
 			p.Title,
 			p.Slug,

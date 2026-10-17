@@ -105,9 +105,7 @@ func (w *Worker) consumeOnce(ctx context.Context) {
 	}
 
 	streamArgs := make([]string, 0, len(streams)*2)
-	for _, s := range streams {
-		streamArgs = append(streamArgs, s)
-	}
+	streamArgs = append(streamArgs, streams...)
 	for range streams {
 		streamArgs = append(streamArgs, ">")
 	}

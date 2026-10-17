@@ -10,7 +10,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/redis/go-redis/v9"
 )
 
 // rbacCacheTTL is how long we cache a staff member's permissions in Redis.
@@ -143,8 +142,4 @@ func isTruthy(v any) bool {
 	default:
 		return false
 	}
-}
-
-func isRedisNil(err error) bool {
-	return err == redis.Nil
 }

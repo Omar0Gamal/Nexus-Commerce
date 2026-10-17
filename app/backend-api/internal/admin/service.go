@@ -376,7 +376,7 @@ func (s *Service) CreateShop(ctx context.Context, ownerID uuid.UUID, req CreateS
 	if err != nil {
 		return nil, fmt.Errorf("begin tx: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	qtx := s.queries.WithTx(tx)
 
