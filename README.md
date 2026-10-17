@@ -295,7 +295,7 @@ Get-Content app/backend-api/seed.sql | docker exec -i $(docker compose -f docker
 
 ---
 
-## Operational Notes & Known Limitations
+## Operational Notes
 
 - Demo data uses placeholder product photos and is not affiliated with any brand.
 - Screenshots are captured from a seeded local database; no real customer data.
